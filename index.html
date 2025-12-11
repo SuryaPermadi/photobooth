@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DreamsBox – 100% Pasti Jalan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+      /* --- Gaya Dasar --- */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: Inter, sans-serif;
+      }
+      #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #brand {
+        position: fixed;
+        top: 25px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font: 900 7vw Inter;
+        color: #ff3366;
+        text-shadow: 3px 3px 15px #000;
+        z-index: 10;
+      }
+      #countdown {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font: 900 28vw Inter;
+        color: #ff3366;
+        opacity: 0;
+        z-index: 9;
+        text-shadow: 0 0 40px #000;
+      }
+      #flash {
+        position: fixed;
+        inset: 0;
+        background: #fff;
+        opacity: 0;
+        z-index: 8;
+        pointer-events: none;
+      }
+      #start {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 22px 90px;
+        font: 900 28px Inter;
+        background: linear-gradient(45deg, #ff3366, #ff1744);
+        color: #fff;
+        border: none;
+        border-radius: 80px;
+        box-shadow: 0 15px 40px rgba(255, 51, 102, 0.7);
+        z-index: 10;
+        cursor: pointer;
+      }
+
+      /* --- Hasil Strip --- */
+      #result {
+        position: fixed;
+        inset: 0;
+        display: none; /* Default hidden */
+        flex-direction: column;
+        align-items: center;
+        background: #000;
+        height: 100%;
+        z-index: 20;
+        overflow-y: auto; /* Agar strip yang panjang bisa di-scroll */
+        padding-top: 4vh;
+        padding-bottom: 120px; /* Jarak untuk tombol di bawah */
+      }
+      #result h2 {
+        font: 900 36px Inter;
+        color: #ff3366;
+        margin-bottom: 20px;
+        margin-top: 0;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+      #finalStrip {
+        max-width: 92vw;
+        height: auto;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(255, 51, 102, 0.5);
+      }
+      .btns {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 15px 25px;
+        background: #000000ee;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        z-index: 25;
+      }
+      .btns button {
+        padding: 15px 30px;
+        margin: 0;
+        font: 900 20px Inter;
+        border: none;
+        border-radius: 50px;
+        color: #fff;
+        min-width: 120px;
+        cursor: pointer;
+      }
+      #down {
+        background: #ff3366;
+      }
+      #wa {
+        background: #25d366;
+      }
+      #again {
+        background: #666;
+      }
+
+      @media (min-width: 600px) {
+        #finalStrip {
+          max-width: 380px; /* Batasi lebar di desktop */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <video id="video" autoplay playsinline muted></video>
+
+    <div id="brand">DreamsBox</div>
+    <div id="countdown"></div>
+    <div id="flash"></div>
+    <button id="start">MULAI DREAMSBOX</button>
+
+    <div id="result">
+      <h2>Hasil DreamsBox</h2>
+      <img id="finalStrip" alt="Final Photobooth Strip" />
+      <div class="btns">
+        <button id="down">DOWNLOAD</button>
+        <button id="wa">WHATSAPP</button>
+        <button id="again">FOTO LAGI</button>
+      </div>
+    </div>
+
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <script>
+      // Elemen
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const countEl = document.getElementById("countdown");
+      const flashEl = document.getElementById("flash");
+      const resultDiv = document.getElementById("result");
+      const finalStrip = document.getElementById("finalStrip");
+      const startBtn = document.getElementById("start");
+      const downBtn = document.getElementById("down");
+      const waBtn = document.getElementById("wa");
+
+      let shots = [];
+      let taken = 0;
+      const NUM_SHOTS = 4;
+
+      // Fungsi Pembantu
+      function flashIt() {
+        flashEl.style.opacity = 1;
+        setTimeout(() => (flashEl.style.opacity = 0), 130);
+      }
+
+      function beep() {
+        new Audio("https://assets.mixkit.co/sfx/preview/mixkit-camera-shutter-click-1133.mp3").play().catch(() => {});
+      }
+
+      function countdown(n) {
+        return new Promise((resolve) => {
+          if (n === 0) {
+            countEl.style.opacity = 0;
+            resolve();
+            return;
+          }
+          countEl.textContent = n;
+          countEl.style.opacity = 1;
+          setTimeout(() => countdown(n - 1).then(resolve), 1000);
+        });
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.crossOrigin = "anonymous"; // Penting jika data berasal dari luar
+          img.src = src;
+        });
+      }
+
+      // Fungsi Inti: Mengambil Foto SQUARE
+      function snap() {
+        // Tentukan lebar dan tinggi video yang sebenarnya
+        const vW = video.videoWidth;
+        const vH = video.videoHeight;
+
+        // Pilih sisi terpendek untuk menentukan ukuran SQUARE
+        const size = Math.min(vW, vH);
+
+        // Hitung posisi cropping untuk memotong di tengah (CENTER-CROP)
+        const sx = (vW - size) / 2;
+        const sy = (vH - size) / 2;
+
+        // Atur canvas menjadi ukuran SQUARE
+        canvas.width = size;
+        canvas.height = size;
+
+        // Aplikasikan filter secara random
+        const filters = ["none", "grayscale(100%)", "sepia(90%)", "contrast(130%) brightness(110%)", "hue-rotate(320deg) saturate(140%)"];
+        ctx.filter = filters[Math.floor(Math.random() * filters.length)];
+
+        // Gambar hanya bagian SQUARE di tengah video
+        ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+
+        shots.push(canvas.toDataURL("image/jpeg", 0.95));
+      }
+
+      // Fungsi Inti: Membuat Strip Foto
+      async function buildStrip() {
+        const squareSize = canvas.width; // Ukuran foto SQUARE yang sudah diambil
+        const stripPadding = Math.round(squareSize * 0.1); // Padding di sekeliling strip (misal 10% dari lebar foto)
+        const photoGap = Math.round(squareSize * 0.05); // Jarak antar foto (misal 5% dari lebar foto)
+        const textHeight = 150; // Tinggi area teks bawah
+
+        const stripW = squareSize + stripPadding * 2; // Lebar total strip
+        const stripH = stripPadding * 2 + squareSize * NUM_SHOTS + photoGap * (NUM_SHOTS - 1) + textHeight;
+
+        const strip = document.createElement("canvas");
+        strip.width = stripW;
+        strip.height = stripH;
+        const c = strip.getContext("2d");
+
+        // 1. Latar Belakang Putih
+        c.fillStyle = "#ffffff";
+        c.fillRect(0, 0, stripW, stripH);
+
+        // 2. Load semua gambar
+        const photoImgs = await Promise.all(shots.map(loadImage));
+
+        // 3. Gambar foto di strip
+        let currentY = stripPadding;
+        for (let i = 0; i < NUM_SHOTS; i++) {
+          // Gambar frame/border putih di sekitar foto (opsional, tapi disarankan)
+          // c.fillStyle = "#f5f5f5";
+          // c.fillRect(stripPadding - 5, currentY - 5, squareSize + 10, squareSize + 10);
+
+          // Gambar foto SQUARE
+          c.drawImage(photoImgs[i], stripPadding, currentY, squareSize, squareSize);
+
+          currentY += squareSize + photoGap; // Pindah ke posisi Y berikutnya
+        }
+
+        // 4. Tulisan bawah
+        c.fillStyle = "#ff3366";
+        c.font = "bold 72px Inter";
+        c.textAlign = "center";
+        c.fillText("DreamsBox", stripW / 2, stripH - textHeight / 2 + 20); // Ditaruh di tengah area teks bawah
+
+        const url = strip.toDataURL("image/jpeg", 0.95);
+        finalStrip.src = url;
+
+        // Tampilkan hasil
+        startBtn.style.display = "none";
+        resultDiv.style.display = "flex";
+
+        // Atur fungsi tombol
+        downBtn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "dreamsbox_photostrip.jpg";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        };
+
+        waBtn.onclick = () => {
+          // Karena WhatsApp tidak bisa langsung mengirim gambar dari Data URL,
+          // kita hanya bisa mengirim teks dan meminta pengguna download dulu.
+          // Namun, kita coba buat link share sederhana saja.
+          const shareText = "Lihat hasil fotobox DreamsBox saya!";
+          const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}%20(Harap%20unduh%20gambar%20di%20bawah)`;
+          window.open(waUrl, "_blank");
+        };
+      }
+
+      // Tombol mulai
+      startBtn.onclick = async () => {
+        shots = [];
+        taken = 0;
+        startBtn.disabled = true;
+        for (let i = 0; i < NUM_SHOTS; i++) {
+          await countdown(3);
+          flashIt();
+          beep();
+          snap();
+          taken++;
+          await new Promise((r) => setTimeout(r, 600)); // Jeda sebentar setelah foto
+        }
+        await buildStrip();
+        startBtn.disabled = false;
+      };
+
+      // Tombol ulang
+      document.getElementById("again").onclick = () => {
+        resultDiv.style.display = "none";
+        startBtn.style.display = "block";
+        video.style.display = "block";
+      };
+
+      // Start camera on load
+      (function init() {
+        navigator.mediaDevices
+          .getUserMedia({ video: { facingMode: "user" } })
+          .then((stream) => {
+            video.srcObject = stream;
+            video.onloadedmetadata = () => video.play();
+          })
+          .catch(() => alert("Izinkan kamera ya!"));
+      })();
+    </script>
+  </body>
+</html>
