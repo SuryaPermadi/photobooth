@@ -127,14 +127,15 @@ function finishCapture() {
     showSection('frame-page');
 }
 
-// 4. Result Generation - FIXED TO WAIT FOR IMAGES TO LOAD
+// 4. Result Generation - 4:3 GRID LAYOUT
 async function generateResult() {
     if (state.photos.length === 0) return;
 
     const frameType = state.selectedFrame;
-    const padding = 40;
-    const bottomPadding = 120; // For text
-    const photoWidth = 600;
+    const outerPadding = 60; // Padding around the entire canvas
+    const photoPadding = 20; // Padding between photos
+    const headerHeight = 80; // Space for title at top
+    const footerHeight = 100; // Space for date at bottom
 
     // Helper to load image
     const loadImage = (src) => {
@@ -147,17 +148,14 @@ async function generateResult() {
     };
 
     try {
-        // Load all images first - THIS IS THE KEY FIX!
+        // Load all images first
         const images = await Promise.all(state.photos.map(loadImage));
-
-        // Calculate aspect ratio from the first photo
-        const firstImg = images[0];
-        const photoHeight = (firstImg.height / firstImg.width) * photoWidth;
 
         // Define Canvas Colors based on Frame
         let bg = '#ffffff';
         let textColor = '#000000';
         let borderColor = 'transparent';
+        let borderWidth = 0;
 
         if (frameType === 'simple-black') {
             bg = '#1a1a1a';
@@ -166,41 +164,87 @@ async function generateResult() {
             bg = '#000000';
             textColor = '#ff00ff';
             borderColor = '#00ffff';
+            borderWidth = 4;
         }
 
-        // Setup Canvas Size (Vertical Strip)
-        const totalHeight = (padding * (images.length + 1)) + (photoHeight * images.length) + bottomPadding;
-        canvas.width = photoWidth + (padding * 2);
-        canvas.height = totalHeight;
+        // Determine grid layout based on photo count
+        let cols, rows;
+        if (images.length === 3) {
+            cols = 2; rows = 2; // 2x2 grid with one empty slot
+        } else if (images.length === 4) {
+            cols = 2; rows = 2; // 2x2 grid
+        } else if (images.length === 5) {
+            cols = 3; rows = 2; // 3x2 grid with one empty slot
+        }
+
+        // Calculate canvas size for 4:3 ratio (landscape)
+        const canvasWidth = 1200; // Fixed width for high quality
+        const canvasHeight = (canvasWidth * 3) / 4; // 4:3 ratio
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // Calculate available space for photos
+        const availableWidth = canvasWidth - (outerPadding * 2);
+        const availableHeight = canvasHeight - headerHeight - footerHeight - (outerPadding * 2);
+
+        // Calculate photo dimensions
+        const photoWidth = (availableWidth - (photoPadding * (cols - 1))) / cols;
+        const photoHeight = (availableHeight - (photoPadding * (rows - 1))) / rows;
 
         // Fill Background
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Photos - now using loaded images
-        let currentY = padding;
+        // Draw Header Text
+        ctx.font = 'bold 36px "Outfit", sans-serif';
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        ctx.fillText('PHOTOBOX MEMORIES', canvasWidth / 2, outerPadding + 40);
 
-        images.forEach((img) => {
-            // Draw Border for Neon
-            if (frameType === 'neon') {
-                ctx.fillStyle = borderColor;
-                ctx.fillRect(padding - 5, currentY - 5, photoWidth + 10, photoHeight + 10);
+        // Draw Photos in Grid
+        let photoIndex = 0;
+        const startY = outerPadding + headerHeight;
+        const startX = outerPadding;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                if (photoIndex >= images.length) break;
+
+                const x = startX + (col * (photoWidth + photoPadding));
+                const y = startY + (row * (photoHeight + photoPadding));
+
+                const img = images[photoIndex];
+
+                // Draw Border for Neon
+                if (frameType === 'neon') {
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = borderWidth;
+                    ctx.strokeRect(x - borderWidth / 2, y - borderWidth / 2, photoWidth + borderWidth, photoHeight + borderWidth);
+                }
+
+                // Draw white/black border for other frames
+                if (frameType === 'simple-white' || frameType === 'simple-black') {
+                    const frameBorderColor = frameType === 'simple-white' ? '#e5e5e5' : '#333333';
+                    ctx.strokeStyle = frameBorderColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, photoWidth, photoHeight);
+                }
+
+                // Draw the photo
+                ctx.drawImage(img, x, y, photoWidth, photoHeight);
+
+                photoIndex++;
             }
-
-            ctx.drawImage(img, padding, currentY, photoWidth, photoHeight);
-            currentY += photoHeight + padding;
-        });
+        }
 
         // Draw Footer Text
-        ctx.font = 'bold 30px "Outfit", sans-serif';
+        ctx.font = '24px "Outfit", sans-serif';
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
 
         const date = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        ctx.fillText('PHOTOBOX MEMORIES', canvas.width / 2, canvas.height - 70);
-
-        ctx.font = '20px "Outfit", sans-serif';
-        ctx.fillText(date, canvas.width / 2, canvas.height - 35);
+        ctx.fillText(date, canvasWidth / 2, canvasHeight - outerPadding + 10);
 
     } catch (err) {
         console.error("Error generating result:", err);
@@ -244,25 +288,38 @@ function resetApp() {
 }
 
 async function shareToInstagram() {
+    // Instagram doesn't support direct web sharing, but we can try mobile share API
+    // and fallback to download for desktop
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     canvas.toBlob(async blob => {
         const file = new File([blob], "photobox_memories.png", { type: "image/png" });
 
-        if (navigator.share) {
+        // Try Web Share API on mobile devices
+        if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
                     title: 'Photobox Memories',
                     text: 'Check out my photobox moments! 📸✨',
                     files: [file]
                 });
+                return;
             } catch (err) {
-                console.log('Share canceled or failed', err);
+                if (err.name !== 'AbortError') {
+                    console.log('Share failed', err);
+                }
             }
-        } else {
-            // Fallback since web share api is finicky on desktop
-            alert("Foto akan didownload. Kamu bisa upload manual ke Instagram ya! 📸");
-            downloadImage();
-
-
         }
+
+        // Fallback: download the image with instructions
+        downloadImage();
+
+        // Show helpful message
+        const msg = isMobile
+            ? "Foto sudah didownload! Buka Instagram app, pilih '+' untuk post baru, lalu pilih foto dari gallery. 📸"
+            : "Foto sudah didownload! Untuk share ke Instagram:\n1. Buka Instagram di HP kamu\n2. Tap '+' untuk post baru\n3. Pilih foto yang baru didownload\n\n💡 Tip: Transfer foto ke HP kamu dulu ya!";
+
+        alert(msg);
     });
 }
