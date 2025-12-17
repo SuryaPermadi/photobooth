@@ -127,15 +127,18 @@ function finishCapture() {
     showSection('frame-page');
 }
 
-// 4. Result Generation - 4:3 GRID LAYOUT
+// 4. Result Generation - COMPACT VERTICAL STRIP (SQUARE-ISH)
 async function generateResult() {
     if (state.photos.length === 0) return;
 
     const frameType = state.selectedFrame;
-    const outerPadding = 60; // Padding around the entire canvas
-    const photoPadding = 20; // Padding between photos
-    const headerHeight = 80; // Space for title at top
-    const footerHeight = 100; // Space for date at bottom
+    const padding = 30; // Padding between photos
+    const sidePadding = 40; // Left/right padding
+    const headerHeight = 70; // Space for header
+    const footerHeight = 80; // Space for footer
+
+    // Fixed width for compact result - good for mobile
+    const photoWidth = 500;
 
     // Helper to load image
     const loadImage = (src) => {
@@ -151,6 +154,10 @@ async function generateResult() {
         // Load all images first
         const images = await Promise.all(state.photos.map(loadImage));
 
+        // Calculate individual photo height (maintaining aspect ratio)
+        const firstImg = images[0];
+        const photoHeight = (firstImg.height / firstImg.width) * photoWidth;
+
         // Define Canvas Colors based on Frame
         let bg = '#ffffff';
         let textColor = '#000000';
@@ -164,87 +171,68 @@ async function generateResult() {
             bg = '#000000';
             textColor = '#ff00ff';
             borderColor = '#00ffff';
-            borderWidth = 4;
+            borderWidth = 3;
         }
 
-        // Determine grid layout based on photo count
-        let cols, rows;
-        if (images.length === 3) {
-            cols = 2; rows = 2; // 2x2 grid with one empty slot
-        } else if (images.length === 4) {
-            cols = 2; rows = 2; // 2x2 grid
-        } else if (images.length === 5) {
-            cols = 3; rows = 2; // 3x2 grid with one empty slot
-        }
-
-        // Calculate canvas size for 4:3 ratio (landscape)
-        const canvasWidth = 1200; // Fixed width for high quality
-        const canvasHeight = (canvasWidth * 3) / 4; // 4:3 ratio
+        // Calculate total canvas dimensions
+        const canvasWidth = photoWidth + (sidePadding * 2);
+        const totalPhotoHeight = (photoHeight * images.length) + (padding * (images.length - 1));
+        const canvasHeight = headerHeight + totalPhotoHeight + footerHeight + (padding * 2);
 
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
-
-        // Calculate available space for photos
-        const availableWidth = canvasWidth - (outerPadding * 2);
-        const availableHeight = canvasHeight - headerHeight - footerHeight - (outerPadding * 2);
-
-        // Calculate photo dimensions
-        const photoWidth = (availableWidth - (photoPadding * (cols - 1))) / cols;
-        const photoHeight = (availableHeight - (photoPadding * (rows - 1))) / rows;
 
         // Fill Background
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Header Text
-        ctx.font = 'bold 36px "Outfit", sans-serif';
+        // Draw Header
+        ctx.font = 'bold 28px "Outfit", sans-serif';
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
-        ctx.fillText('PHOTOBOX MEMORIES', canvasWidth / 2, outerPadding + 40);
+        ctx.fillText('PHOTOBOX MEMORIES', canvasWidth / 2, headerHeight - 25);
 
-        // Draw Photos in Grid
-        let photoIndex = 0;
-        const startY = outerPadding + headerHeight;
-        const startX = outerPadding;
+        // Draw Photos Vertically
+        let currentY = headerHeight + padding;
 
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                if (photoIndex >= images.length) break;
+        images.forEach((img) => {
+            const x = sidePadding;
 
-                const x = startX + (col * (photoWidth + photoPadding));
-                const y = startY + (row * (photoHeight + photoPadding));
-
-                const img = images[photoIndex];
-
-                // Draw Border for Neon
-                if (frameType === 'neon') {
-                    ctx.strokeStyle = borderColor;
-                    ctx.lineWidth = borderWidth;
-                    ctx.strokeRect(x - borderWidth / 2, y - borderWidth / 2, photoWidth + borderWidth, photoHeight + borderWidth);
-                }
-
-                // Draw white/black border for other frames
-                if (frameType === 'simple-white' || frameType === 'simple-black') {
-                    const frameBorderColor = frameType === 'simple-white' ? '#e5e5e5' : '#333333';
-                    ctx.strokeStyle = frameBorderColor;
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x, y, photoWidth, photoHeight);
-                }
-
-                // Draw the photo
-                ctx.drawImage(img, x, y, photoWidth, photoHeight);
-
-                photoIndex++;
+            // Draw Border for Neon frame
+            if (frameType === 'neon') {
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = borderWidth;
+                ctx.strokeRect(x - borderWidth, currentY - borderWidth,
+                    photoWidth + (borderWidth * 2), photoHeight + (borderWidth * 2));
             }
-        }
 
-        // Draw Footer Text
-        ctx.font = '24px "Outfit", sans-serif';
+            // Draw subtle border for other frames
+            if (frameType === 'simple-white') {
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, currentY, photoWidth, photoHeight);
+            } else if (frameType === 'simple-black') {
+                ctx.strokeStyle = '#404040';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, currentY, photoWidth, photoHeight);
+            }
+
+            // Draw the photo
+            ctx.drawImage(img, x, currentY, photoWidth, photoHeight);
+            currentY += photoHeight + padding;
+        });
+
+        // Draw Footer
+        ctx.font = '18px "Outfit", sans-serif';
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
 
-        const date = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        ctx.fillText(date, canvasWidth / 2, canvasHeight - outerPadding + 10);
+        const date = new Date().toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        ctx.fillText(date, canvasWidth / 2, canvasHeight - footerHeight + 35);
 
     } catch (err) {
         console.error("Error generating result:", err);
