@@ -243,15 +243,15 @@ function resetApp() {
     location.reload();
 }
 
-async function shareToWhatsApp() {
+async function shareToInstagram() {
     canvas.toBlob(async blob => {
-        const file = new File([blob], "photobox_surya.png", { type: "image/png" });
+        const file = new File([blob], "photobox_memories.png", { type: "image/png" });
 
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: 'Photobox Memories',
-                    text: 'Seru banget foto di Photobox ini! Coba yuk!',
+                    text: 'Check out my photobox moments! 📸✨',
                     files: [file]
                 });
             } catch (err) {
@@ -259,11 +259,10 @@ async function shareToWhatsApp() {
             }
         } else {
             // Fallback since web share api is finicky on desktop
-            alert("Untuk sharing, foto akan didownload kedaulamu ya!");
+            alert("Foto akan didownload. Kamu bisa upload manual ke Instagram ya! 📸");
             downloadImage();
 
-            // Optional: Open WhatsApp Web intent with text only if file share fails
-            // window.open(`https://wa.me/?text=Cek%20foto%20seru%20aku!`, '_blank');
+
         }
     });
 }
