@@ -261,6 +261,29 @@ async function generateResult() {
         });
         ctx.fillText(date, canvasWidth / 2, canvasHeight - outerPadding + 5);
 
+        // Draw decorative emojis based on frame theme
+        ctx.font = '24px sans-serif';
+
+        if (frameType === 'simple-white') {
+            // Cute/romantic theme
+            ctx.fillText('✨', outerPadding - 5, outerPadding + 35);
+            ctx.fillText('💕', canvasWidth - outerPadding - 15, outerPadding + 35);
+            ctx.fillText('🌸', outerPadding + 15, canvasHeight - 15);
+            ctx.fillText('💖', canvasWidth - outerPadding - 35, canvasHeight - 15);
+        } else if (frameType === 'simple-black') {
+            // Night/cool theme
+            ctx.fillText('🌙', outerPadding - 5, outerPadding + 35);
+            ctx.fillText('⭐', canvasWidth - outerPadding - 15, outerPadding + 35);
+            ctx.fillText('🖤', outerPadding + 15, canvasHeight - 15);
+            ctx.fillText('✨', canvasWidth - outerPadding - 35, canvasHeight - 15);
+        } else if (frameType === 'neon') {
+            // Cyber/tech theme
+            ctx.fillText('⚡', outerPadding - 5, outerPadding + 35);
+            ctx.fillText('🔥', canvasWidth - outerPadding - 15, outerPadding + 35);
+            ctx.fillText('💜', outerPadding + 15, canvasHeight - 15);
+            ctx.fillText('💙', canvasWidth - outerPadding - 35, canvasHeight - 15);
+        }
+
     } catch (err) {
         console.error("Error generating result:", err);
         alert("Terjadi kesalahan saat memproses foto.");
