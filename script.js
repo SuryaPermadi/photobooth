@@ -1,10 +1,10 @@
 // State
 let state = {
     photoCount: 0,
-    photos: [], // Array to store captured Photo Blobs/Data URLs
+    photos: [],
     selectedFrame: 'simple-white',
     width: 640,
-    height: 480 // Will be set based on video aspect ratio
+    height: 480
 };
 
 // DOM Elements
@@ -76,7 +76,6 @@ function captureNextPhoto(current) {
 
     currentPhotoSpan.textContent = current;
 
-    // Countdown
     let count = 3;
     countdownOverlay.classList.remove('hidden');
     countdownText.textContent = count;
@@ -89,25 +88,20 @@ function captureNextPhoto(current) {
             clearInterval(timer);
             takePhoto();
             countdownOverlay.classList.add('hidden');
-
-            // Wait a bit before next photo
             setTimeout(() => captureNextPhoto(current + 1), 1000);
         }
     }, 1000);
 }
 
 function takePhoto() {
-    // Flash effect
     flashOverlay.classList.add('flash-active');
     setTimeout(() => { flashOverlay.classList.remove('flash-active'); }, 500);
 
-    // Capture frame from video
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = video.videoWidth;
     tempCanvas.height = video.videoHeight;
     const tempCtx = tempCanvas.getContext('2d');
 
-    // Flip horizontally because video is mirrored
     tempCtx.translate(tempCanvas.width, 0);
     tempCtx.scale(-1, 1);
 
@@ -116,31 +110,24 @@ function takePhoto() {
 }
 
 function finishCapture() {
-    // Stop camera
     const stream = video.srcObject;
     if (stream) {
         const tracks = stream.getTracks();
         tracks.forEach(track => track.stop());
     }
-
-    // Navigate to Frame Selection
     showSection('frame-page');
 }
 
-// 4. Result Generation - COMPACT VERTICAL STRIP (SQUARE-ISH)
+// 4. Result Generation - NATURAL ASPECT RATIO GRID
 async function generateResult() {
     if (state.photos.length === 0) return;
 
     const frameType = state.selectedFrame;
-    const padding = 30; // Padding between photos
-    const sidePadding = 40; // Left/right padding
-    const headerHeight = 70; // Space for header
-    const footerHeight = 80; // Space for footer
+    const padding = 15;
+    const outerPadding = 30;
+    const headerHeight = 60;
+    const footerHeight = 50;
 
-    // Fixed width for compact result - good for mobile
-    const photoWidth = 500;
-
-    // Helper to load image
     const loadImage = (src) => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -151,14 +138,14 @@ async function generateResult() {
     };
 
     try {
-        // Load all images first
         const images = await Promise.all(state.photos.map(loadImage));
 
-        // Calculate individual photo height (maintaining aspect ratio)
-        const firstImg = images[0];
-        const photoHeight = (firstImg.height / firstImg.width) * photoWidth;
+        // Get original aspect ratio from first image
+        const originalWidth = images[0].width;
+        const originalHeight = images[0].height;
+        const aspectRatio = originalWidth / originalHeight;
 
-        // Define Canvas Colors based on Frame
+        // Define colors based on frame
         let bg = '#ffffff';
         let textColor = '#000000';
         let borderColor = 'transparent';
@@ -174,10 +161,27 @@ async function generateResult() {
             borderWidth = 3;
         }
 
-        // Calculate total canvas dimensions
-        const canvasWidth = photoWidth + (sidePadding * 2);
-        const totalPhotoHeight = (photoHeight * images.length) + (padding * (images.length - 1));
-        const canvasHeight = headerHeight + totalPhotoHeight + footerHeight + (padding * 2);
+        // Grid layout
+        let cols = 2;
+        let rows;
+        if (images.length === 3) {
+            rows = 2;
+        } else if (images.length === 4) {
+            rows = 2;
+        } else if (images.length === 5) {
+            rows = 3;
+        }
+
+        // Calculate photo size maintaining aspect ratio
+        const targetPhotoWidth = 350;
+        const targetPhotoHeight = targetPhotoWidth / aspectRatio; // Maintain aspect ratio!
+
+        // Calculate canvas size based on content
+        const contentWidth = (targetPhotoWidth * 2) + padding;
+        const contentHeight = (targetPhotoHeight * rows) + (padding * (rows - 1));
+
+        const canvasWidth = contentWidth + (outerPadding * 2);
+        const canvasHeight = contentHeight + headerHeight + footerHeight + (outerPadding * 2);
 
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
@@ -187,43 +191,66 @@ async function generateResult() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Draw Header
-        ctx.font = 'bold 28px "Outfit", sans-serif';
+        ctx.font = 'bold 24px "Outfit", sans-serif';
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
-        ctx.fillText('PHOTOBOX MEMORIES', canvasWidth / 2, headerHeight - 25);
+        ctx.fillText('PHOTOBOX MEMORIES', canvasWidth / 2, outerPadding + 30);
 
-        // Draw Photos Vertically
-        let currentY = headerHeight + padding;
+        // Draw Photos in Grid
+        const startY = outerPadding + headerHeight;
+        const startX = outerPadding;
 
-        images.forEach((img) => {
-            const x = sidePadding;
+        let photoIndex = 0;
 
-            // Draw Border for Neon frame
-            if (frameType === 'neon') {
-                ctx.strokeStyle = borderColor;
-                ctx.lineWidth = borderWidth;
-                ctx.strokeRect(x - borderWidth, currentY - borderWidth,
-                    photoWidth + (borderWidth * 2), photoHeight + (borderWidth * 2));
+        for (let row = 0; row < rows; row++) {
+            let photosInRow = 2;
+            let rowStartX = startX;
+
+            // Center single photo in last row for 3 or 5 photos
+            if (images.length === 3 && row === 1) {
+                photosInRow = 1;
+                rowStartX = startX + (targetPhotoWidth + padding) / 2;
+            }
+            if (images.length === 5 && row === 2) {
+                photosInRow = 1;
+                rowStartX = startX + (targetPhotoWidth + padding) / 2;
             }
 
-            // Draw subtle border for other frames
-            if (frameType === 'simple-white') {
-                ctx.strokeStyle = '#e0e0e0';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, currentY, photoWidth, photoHeight);
-            } else if (frameType === 'simple-black') {
-                ctx.strokeStyle = '#404040';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, currentY, photoWidth, photoHeight);
-            }
+            for (let col = 0; col < photosInRow; col++) {
+                if (photoIndex >= images.length) break;
 
-            // Draw the photo
-            ctx.drawImage(img, x, currentY, photoWidth, photoHeight);
-            currentY += photoHeight + padding;
-        });
+                const x = rowStartX + (col * (targetPhotoWidth + padding));
+                const y = startY + (row * (targetPhotoHeight + padding));
+
+                const img = images[photoIndex];
+
+                // Draw Border for Neon
+                if (frameType === 'neon') {
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = borderWidth;
+                    ctx.strokeRect(x - borderWidth / 2, y - borderWidth / 2,
+                        targetPhotoWidth + borderWidth, targetPhotoHeight + borderWidth);
+                }
+
+                // Draw border for other frames
+                if (frameType === 'simple-white') {
+                    ctx.strokeStyle = '#e0e0e0';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, targetPhotoWidth, targetPhotoHeight);
+                } else if (frameType === 'simple-black') {
+                    ctx.strokeStyle = '#404040';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, targetPhotoWidth, targetPhotoHeight);
+                }
+
+                // Draw photo maintaining aspect ratio
+                ctx.drawImage(img, x, y, targetPhotoWidth, targetPhotoHeight);
+                photoIndex++;
+            }
+        }
 
         // Draw Footer
-        ctx.font = '18px "Outfit", sans-serif';
+        ctx.font = '16px "Outfit", sans-serif';
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
 
@@ -232,11 +259,11 @@ async function generateResult() {
             month: 'long',
             day: 'numeric'
         });
-        ctx.fillText(date, canvasWidth / 2, canvasHeight - footerHeight + 35);
+        ctx.fillText(date, canvasWidth / 2, canvasHeight - outerPadding + 5);
 
     } catch (err) {
         console.error("Error generating result:", err);
-        alert("Terjadi kesalahan saat memproses foto. Silakan coba lagi.");
+        alert("Terjadi kesalahan saat memproses foto.");
     }
 }
 
@@ -244,7 +271,6 @@ async function generateResult() {
 function selectFrame(frameName) {
     state.selectedFrame = frameName;
 
-    // Update UI to show selection
     const buttons = document.querySelectorAll('#frame-container button');
     buttons.forEach(btn => {
         if (btn.onclick.toString().includes(frameName)) {
@@ -254,13 +280,11 @@ function selectFrame(frameName) {
         }
     });
 
-    // If we are already on result page, regenerate
     if (!sections.result.classList.contains('hidden')) {
         generateResult();
     }
 }
 
-// Initial Call to setup default
 selectFrame('simple-white');
 
 // Tools
@@ -276,15 +300,11 @@ function resetApp() {
 }
 
 async function shareToInstagram() {
-    // Instagram doesn't support direct web sharing, but we can try mobile share API
-    // and fallback to download for desktop
-
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     canvas.toBlob(async blob => {
         const file = new File([blob], "photobox_memories.png", { type: "image/png" });
 
-        // Try Web Share API on mobile devices
         if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
@@ -300,13 +320,11 @@ async function shareToInstagram() {
             }
         }
 
-        // Fallback: download the image with instructions
         downloadImage();
 
-        // Show helpful message
         const msg = isMobile
-            ? "Foto sudah didownload! Buka Instagram app, pilih '+' untuk post baru, lalu pilih foto dari gallery. 📸"
-            : "Foto sudah didownload! Untuk share ke Instagram:\n1. Buka Instagram di HP kamu\n2. Tap '+' untuk post baru\n3. Pilih foto yang baru didownload\n\n💡 Tip: Transfer foto ke HP kamu dulu ya!";
+            ? "Foto sudah didownload! Buka Instagram, pilih '+' lalu pilih foto dari gallery. 📸"
+            : "Foto sudah didownload! Transfer ke HP dan upload ke Instagram ya!";
 
         alert(msg);
     });
