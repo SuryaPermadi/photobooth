@@ -1,421 +1,219 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <title>DreamsBox – Ekspresikan Dirimu!</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap" rel="stylesheet" />
-    <style>
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        background: #000;
-        overflow: hidden;
-        font-family: "Inter", sans-serif;
-        touch-action: manipulation;
-      }
-      #video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transform: scaleX(-1);
-      }
-      #brand {
-        position: fixed;
-        top: 25px;
-        left: 0;
-        width: 100%;
-        text-align: center;
-        font: 900 7vw "Gaegu", cursive;
-        color: #ff99cc;
-        text-shadow: 3px 3px 15px #000;
-        z-index: 10;
-        pointer-events: none;
-      }
-      #countdown {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        font: 900 28vw "Gaegu";
-        color: #ff99cc;
-        text-shadow: 0 0 40px #000;
-        z-index: 9;
-        pointer-events: none;
-        transition: transform 0.3s ease;
-      }
-      #countdown.show {
-        transform: translate(-50%, -50%) scale(1);
-      }
-      #flash {
-        position: fixed;
-        inset: 0;
-        background: #fff;
-        opacity: 0;
-        z-index: 8;
-        pointer-events: none;
-        transition: opacity 0.2s;
-      }
-      #start {
-        position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 22px 90px;
-        font: 900 28px "Gaegu";
-        background: linear-gradient(45deg, #ff99cc, #ccffff);
-        color: #fff;
-        border: none;
-        border-radius: 80px;
-        box-shadow: 0 15px 40px rgba(255, 153, 204, 0.7);
-        z-index: 10;
-        cursor: pointer;
-      }
 
-      #selection {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.95);
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 15;
-        color: #fff;
-      }
-      #selection h3 {
-        font: 900 36px "Gaegu";
-        color: #ff99cc;
-        margin-bottom: 50px;
-        text-shadow: 0 0 10px #000;
-      }
-      .options {
-        display: flex;
-        gap: 25px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .opt-btn {
-        width: 140px;
-        height: 140px;
-        background: #333;
-        border: 4px solid #ff99cc;
-        border-radius: 30px;
-        cursor: pointer;
-        box-shadow: 0 10px 30px rgba(255, 153, 204, 0.4);
-        transition: all 0.3s;
-        font: 900 48px "Gaegu";
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .opt-btn:hover {
-        transform: scale(1.1);
-        border-color: #fff;
-      }
-
-      #result {
-        position: fixed;
-        inset: 0;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        background: #000;
-        z-index: 20;
-        padding: 4vh 0 120px;
-        overflow-y: auto;
-      }
-      #result h2 {
-        font: 900 36px "Gaegu";
-        color: #ff99cc;
-        margin: 0 0 30px 0;
-        text-shadow: 0 0 10px #000;
-      }
-      #finalStrip {
-        max-width: 92vw;
-        border-radius: 30px;
-        box-shadow: 0 15px 50px rgba(255, 153, 204, 0.6);
-      }
-      .btns {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        padding: 20px;
-        background: #000000ee;
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        z-index: 25;
-      }
-      .btns button {
-        padding: 16px 32px;
-        font: 900 20px "Gaegu";
-        border: none;
-        border-radius: 50px;
-        color: #fff;
-        min-width: 130px;
-        cursor: pointer;
-      }
-      #down {
-        background: #ff99cc;
-      }
-      #wa {
-        background: #25d366;
-      }
-      #again {
-        background: #ccc;
-      }
-
-      @media (min-width: 600px) {
-        #finalStrip {
-          max-width: 420px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <video id="video" autoplay playsinline muted></video>
-    <div id="brand">DreamsBox</div>
-    <div id="countdown"></div>
-    <div id="flash"></div>
-    <button id="start">MULAI DREAMSBOX</button>
-
-    <div id="selection">
-      <h3>Pilih Jumlah Foto</h3>
-      <div class="options">
-        <div class="opt-btn" data-num="3">3</div>
-        <div class="opt-btn" data-num="4">4</div>
-        <div class="opt-btn" data-num="5">5</div>
-      </div>
-    </div>
-
-    <div id="result">
-      <h2>Hasil DreamsBox</h2>
-      <img id="finalStrip" alt="Photostrip" />
-      <div class="btns">
-        <button id="down">DOWNLOAD</button>
-        <button id="wa">WHATSAPP</button>
-        <button id="again">FOTO LAGI</button>
-      </div>
-    </div>
-
-    <canvas id="canvas" style="display: none"></canvas>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photobox Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <script>
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
-      const countEl = document.getElementById("countdown");
-      const flashEl = document.getElementById("flash");
-      const resultDiv = document.getElementById("result");
-      const finalStrip = document.getElementById("finalStrip");
-      const startBtn = document.getElementById("start");
-      const selectionDiv = document.getElementById("selection");
-      const downBtn = document.getElementById("down");
-      const waBtn = document.getElementById("wa");
-      const againBtn = document.getElementById("again");
-
-      let shots = [];
-      let NUM_SHOTS = 4;
-
-      const filters = [
-        "none",
-        "contrast(110%) brightness(105%) saturate(120%)",
-        "sepia(30%) contrast(110%)",
-        "brightness(110%) contrast(115%)",
-        "saturate(130%) hue-rotate(10deg)",
-        "contrast(120%) brightness(108%)",
-        "saturate(110%) brightness(105%)",
-      ];
-
-      function flashIt() {
-        flashEl.style.opacity = 1;
-        setTimeout(() => (flashEl.style.opacity = 0), 200);
-      }
-      function beep() {
-        new Audio("https://assets.mixkit.co/sfx/preview/mixkit-camera-shutter-click-1133.mp3").play().catch(() => {});
-      }
-
-      async function countdown(n) {
-        if (n === 0) {
-          countEl.classList.remove("show");
-          await new Promise((r) => setTimeout(r, 300));
-          return;
-        }
-        countEl.textContent = n;
-        countEl.classList.add("show");
-        await new Promise((r) => setTimeout(r, 1000));
-        return countdown(n - 1);
-      }
-
-      function snap() {
-        const vW = video.videoWidth,
-          vH = video.videoHeight;
-        const size = Math.min(vW, vH);
-        const sx = (vW - size) / 2,
-          sy = (vH - size) / 2;
-        canvas.width = canvas.height = size;
-        ctx.filter = filters[Math.floor(Math.random() * filters.length)];
-        ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-        shots.push(canvas.toDataURL("image/jpeg", 0.95));
-      }
-
-      async function buildStrip() {
-        const photoSize = canvas.width * 0.9;
-        const gap = Math.round(photoSize * 0.15);
-        const paddingY = Math.round(photoSize * 0.3);
-        const footerH = Math.round(photoSize * 1.0);
-
-        const stripW = canvas.width * 1.1;
-        const stripH = paddingY * 2 + photoSize * NUM_SHOTS + gap * (NUM_SHOTS - 1) + footerH;
-
-        const strip = document.createElement("canvas");
-        strip.width = stripW;
-        strip.height = stripH;
-        const c = strip.getContext("2d");
-
-        // Background pastel mint green soft
-        c.fillStyle = "#e0fff5";
-        c.fillRect(0, 0, stripW, stripH);
-
-        // Rounded corner cute
-        c.save();
-        c.beginPath();
-        c.roundRect(0, 0, stripW, stripH, 50);
-        c.clip();
-
-        // Tambah banyak emot-emot lucu di pinggir (nggak dikit lagi!)
-        c.fillStyle = "#ff99cc";
-        c.font = "45px Gaegu";
-        const emots = ["👾", "🎮🕹️👾", "🧸ྀི", "𒅒𒈔𒅒𒇫𒄆", "˚.🎀༘⋆", "▶• ılıılıılılılıılıılı. 0", "🪼⋆｡𖦹°🫧⋆.ೃ࿔*:･", "🎨", "🎸⋆⭒˚｡⋆", "🛸", "🌑🌒🌓🌔🌕", "♫⋆｡♪ ₊˚♬ ﾟ."];
-        const positions = [
-          { x: 0.05, y: 0.05 },
-          { x: 0.95, y: 0.05 },
-          { x: 0.05, y: 0.95 },
-          { x: 0.95, y: 0.95 },
-          { x: 0.5, y: 0.05 },
-          { x: 0.5, y: 0.95 },
-          { x: 0.1, y: 0.2 },
-          { x: 0.9, y: 0.2 },
-          { x: 0.1, y: 0.8 },
-          { x: 0.9, y: 0.8 },
-          { x: 0.2, y: 0.1 },
-          { x: 0.8, y: 0.1 },
-          { x: 0.2, y: 0.9 },
-          { x: 0.8, y: 0.9 },
-          { x: 0.3, y: 0.3 },
-          { x: 0.7, y: 0.3 },
-          { x: 0.3, y: 0.7 },
-          { x: 0.7, y: 0.7 },
-        ];
-        positions.forEach((pos) => {
-          const emot = emots[Math.floor(Math.random() * emots.length)];
-          c.fillText(emot, stripW * pos.x, stripH * pos.y);
-        });
-
-        // Gambar foto dengan shadow pink halus
-        let y = paddingY;
-        const imgs = await Promise.all(
-          shots.map(
-            (src) =>
-              new Promise((res) => {
-                const i = new Image();
-                i.crossOrigin = "anonymous";
-                i.onload = () => res(i);
-                i.src = src;
-              })
-          )
-        );
-        imgs.forEach((img) => {
-          const x = (stripW - photoSize) / 2;
-          c.shadowColor = "#ff99cc";
-          c.shadowBlur = 20;
-          c.drawImage(img, x, y, photoSize, photoSize);
-          c.shadowBlur = 0;
-          y += photoSize + gap;
-        });
-
-        c.restore();
-
-        // Teks DreamsBox pink kawaii
-        const today = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-        c.fillStyle = "#ff66aa";
-        c.font = `bold ${Math.round(photoSize * 0.22)}px 'Gaegu',cursive`;
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.fillText("DreamsBox", stripW / 2, stripH - footerH / 2 - 30);
-        c.font = `bold ${Math.round(photoSize * 0.1)}px 'Gaegu',cursive`;
-        c.fillText(today, stripW / 2, stripH - footerH / 2 + 50);
-
-        const dataUrl = strip.toDataURL("image/jpeg", 0.96);
-        finalStrip.src = dataUrl;
-
-        downBtn.onclick = () => {
-          const a = document.createElement("a");
-          a.href = dataUrl;
-          a.download = `dreamsbox_${NUM_SHOTS}foto.jpg`;
-          a.click();
-        };
-        waBtn.onclick = async () => {
-          const blob = await (await fetch(dataUrl)).blob();
-          const file = new File([blob], "dreamsbox.jpg", { type: "image/jpeg" });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({ files: [file], title: "DreamsBox", text: `Hasil foto ${NUM_SHOTS} tanggal ${today} 💕` });
-            } catch {
-              fallbackWA();
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        glass: 'rgba(255, 255, 255, 0.1)',
+                        glassBorder: 'rgba(255, 255, 255, 0.2)',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
             }
-          } else fallbackWA();
-        };
-        function fallbackWA() {
-          window.open(`https://wa.me/?text=Cek%20hasil%20DreamsBox%20aku%20${today}%20💕`, "_blank");
         }
-
-        resultDiv.style.display = "flex";
-        startBtn.style.display = "none";
-      }
-
-      document.querySelectorAll(".opt-btn").forEach(
-        (b) =>
-          (b.onclick = () => {
-            NUM_SHOTS = parseInt(b.dataset.num);
-            selectionDiv.style.display = "none";
-            startSession();
-          })
-      );
-
-      async function startSession() {
-        shots = [];
-        for (let i = 0; i < NUM_SHOTS; i++) {
-          await countdown(3);
-          flashIt();
-          beep();
-          snap();
-          await new Promise((r) => setTimeout(r, 800));
-        }
-        await buildStrip();
-      }
-
-      startBtn.onclick = () => {
-        startBtn.style.display = "none";
-        selectionDiv.style.display = "flex";
-      };
-      againBtn.onclick = () => {
-        resultDiv.style.display = "none";
-        startBtn.style.display = "block";
-      };
-
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "user" } })
-        .then((s) => {
-          video.srcObject = s;
-          video.play();
-        })
-        .catch(() => alert("Izinkan akses kamera ya biar DreamsBox bisa jalan! 💕"));
     </script>
-  </body>
+    <style>
+        body {
+            background: #0f0c29;
+            /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #24243e, #302b63, #0f0c29);
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body
+    class="flex flex-col items-center justify-center font-sans antialiased bg-fixed selection:bg-purple-500 selection:text-white">
+
+    <!-- Background Orbs (Decorative) -->
+    <div
+        class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow">
+    </div>
+    <div
+        class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow animation-delay-2000">
+    </div>
+
+    <!-- Main Container -->
+    <main
+        class="relative z-10 w-full max-w-md md:max-w-2xl lg:max-w-4xl min-h-screen md:min-h-[80vh] flex flex-col p-6 items-center justify-center">
+
+        <!-- Header / Logo -->
+        <header class="absolute top-6 w-full text-center">
+            <h1
+                class="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 drop-shadow-lg">
+                PHOTOBOX
+            </h1>
+        </header>
+
+        <!-- SECTION 1: LANDING / PHOTO SELECTION -->
+        <section id="landing-page" class="w-full flex flex-col items-center justify-center space-y-12 animate-float">
+            <div class="text-center space-y-4">
+                <h2 class="text-5xl md:text-7xl font-bold leading-tight">
+                    Capture <br> <span class="text-purple-400">Moment</span>
+                </h2>
+                <p class="text-gray-300 text-lg md:text-xl max-w-md mx-auto">
+                    Pilih jumlah foto dan abadikan momen seru kamu!
+                </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 w-full max-w-sm">
+                <button onclick="selectPhotoCount(3)"
+                    class="group relative flex flex-col items-center justify-center p-6 glass-panel rounded-2xl hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:border-purple-500/50 cursor-pointer">
+                    <span class="text-4xl font-bold mb-2 group-hover:text-purple-300 transition-colors">3</span>
+                    <span class="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white">FOTO</span>
+                </button>
+                <button onclick="selectPhotoCount(4)"
+                    class="group relative flex flex-col items-center justify-center p-6 glass-panel rounded-2xl hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:border-purple-500/50 cursor-pointer">
+                    <span class="text-4xl font-bold mb-2 group-hover:text-purple-300 transition-colors">4</span>
+                    <span class="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white">FOTO</span>
+                </button>
+                <button onclick="selectPhotoCount(5)"
+                    class="group relative flex flex-col items-center justify-center p-6 glass-panel rounded-2xl hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:border-purple-500/50 cursor-pointer">
+                    <span class="text-4xl font-bold mb-2 group-hover:text-purple-300 transition-colors">5</span>
+                    <span class="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white">FOTO</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CAMERA -->
+        <section id="camera-page" class="hidden w-full flex-col items-center">
+            <div
+                class="relative w-full max-w-md aspect-[3/4] bg-black rounded-3xl overflow-hidden shadow-2xl border-4 border-white/5">
+                <video id="video-feed" autoplay playsinline
+                    class="w-full h-full object-cover transform scale-x-[-1]"></video> <!-- Mirror effect -->
+
+                <!-- Countdown Overlay -->
+                <div id="countdown-overlay"
+                    class="absolute inset-0 flex items-center justify-center bg-black/40 hidden">
+                    <span id="countdown-text"
+                        class="text-9xl font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] animate-pulse">3</span>
+                </div>
+
+                <!-- Flash Overlay -->
+                <div id="flash-overlay"
+                    class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-100">
+                </div>
+
+                <div class="absolute bottom-6 w-full text-center">
+                    <p class="text-white/80 bg-black/50 px-4 py-1 rounded-full inline-block backdrop-blur-sm">
+                        Foto <span id="current-photo-count">0</span> / <span id="total-photo-count">0</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button id="start-camera-btn" onclick="startPhotoSequence()"
+                    class="px-8 py-3 bg-white text-purple-900 font-bold rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                    Mulai Foto
+                </button>
+            </div>
+        </section>
+
+        <!-- SECTION 3: FRAME SELECTION -->
+        <section id="frame-page" class="hidden w-full flex-col items-center text-center space-y-8 animate-fade-in">
+            <h2 class="text-3xl font-bold">Pilih Frame Kamu</h2>
+
+            <div class="grid grid-cols-3 gap-6 w-full max-w-2xl px-4" id="frame-container">
+                <button onclick="selectFrame('simple-white')"
+                    class="group relative bg-white/5 border-2 border-transparent p-4 rounded-xl hover:bg-white/10 transition-all flex flex-col items-center gap-2">
+                    <div class="w-full aspect-[2/3] bg-white rounded-md mb-2"></div>
+                    <span class="text-sm font-semibold">White Classic</span>
+                </button>
+
+                <button onclick="selectFrame('simple-black')"
+                    class="group relative bg-white/5 border-2 border-transparent p-4 rounded-xl hover:bg-white/10 transition-all flex flex-col items-center gap-2">
+                    <div class="w-full aspect-[2/3] bg-gray-900 rounded-md mb-2"></div>
+                    <span class="text-sm font-semibold">Dark Mode</span>
+                </button>
+
+                <button onclick="selectFrame('neon')"
+                    class="group relative bg-white/5 border-2 border-transparent p-4 rounded-xl hover:bg-white/10 transition-all flex flex-col items-center gap-2">
+                    <div
+                        class="w-full aspect-[2/3] bg-black border-2 border-cyan-400 rounded-md mb-2 shadow-[0_0_10px_cyan]">
+                    </div>
+                    <span class="text-sm font-semibold text-cyan-400">Cyber Neon</span>
+                </button>
+            </div>
+
+            <button onclick="generateResult(); showSection('result-page')"
+                class="px-10 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-bold text-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all transform hover:-translate-y-1">
+                Lihat Hasil
+            </button>
+        </section>
+
+        <!-- SECTION 4: RESULT -->
+        <section id="result-page" class="hidden w-full flex-col items-center space-y-6">
+            <h2 class="text-3xl font-bold">Hasil Foto</h2>
+
+            <!-- Canvas Result -->
+            <div class="relative shadow-2xl rounded-lg overflow-hidden border border-white/10">
+                <canvas id="result-canvas" class="max-h-[60vh] max-w-full"></canvas>
+            </div>
+
+            <div class="flex flex-wrap gap-4 justify-center w-full">
+                <button onclick="downloadImage()"
+                    class="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-semibold transition-all shadow-lg hover:shadow-purple-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Download</span>
+                </button>
+                <button onclick="resetApp()"
+                    class="flex items-center space-x-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-semibold transition-all">
+                    <span>Ulangi</span>
+                </button>
+            </div>
+
+            <!-- Social Share -->
+            <div class="flex space-x-4 mt-4">
+                <button onclick="shareToWhatsApp()"
+                    class="p-3 bg-green-500 rounded-full hover:bg-green-600 transition text-white">
+                    WhatsApp
+                </button>
+                <!-- Add Instagram (Usually just copies image/link or opens app, easier to just download first) -->
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
 </html>

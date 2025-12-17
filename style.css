@@ -1,0 +1,30 @@
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f0c29; 
+}
+::-webkit-scrollbar-thumb {
+    background: #4c1d95; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #6d28d9; 
+}
+
+/* Flash Animation */
+@keyframes flash {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.flash-active {
+    animation: flash 0.5s ease-out forwards;
+}
+
+/* Canvas responsiveness */
+canvas {
+    display: block;
+    margin: 0 auto;
+}
